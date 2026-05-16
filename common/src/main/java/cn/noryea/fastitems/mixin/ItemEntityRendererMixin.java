@@ -31,6 +31,11 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
 
     @Shadow @Final private RandomSource random;
 
+    @Override
+    public float getShadowRadius(ItemEntityRenderState state) {
+        return FastItemsConfig.castShadows ? super.getShadowRadius(state) : 0.0f;
+    }
+
     protected ItemEntityRendererMixin(EntityRendererProvider.Context context) {
         super(context);
     }
@@ -101,12 +106,17 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
                 }
             }
 
+            if (!FastItemsConfig.renderSidesOfItems && !gui3d) {
+                poseStack.scale(1.0F, 1.0F, 0.01F);
+            }
+
             state.item.submit(poseStack, multiBufferSource, light, OverlayTexture.NO_OVERLAY, state.outlineColor);
             poseStack.popPose();
             
             if (!gui3d) {
                 // translate by z-scale for thickness stacking
-                poseStack.translate(0.0, 0.0, 0.0425);
+                float offset = FastItemsConfig.renderSidesOfItems ? 0.0425f : 0.001f;
+                poseStack.translate(0.0, 0.0, offset);
             }
         }
     }
