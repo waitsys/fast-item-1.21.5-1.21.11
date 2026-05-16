@@ -6,11 +6,11 @@
 	"description": "Optimize item rendering by transforming item entities to 2D",
 	"icon": "assets/fastitems/icon.png",
 	"authors": [
-		"Noryea"
+		"Abbezahlen"
 	],
 	"contact": {
-		"sources": "https://github.com/Noryea/fast-items",
-		"issues": "https://github.com/Noryea/fast-items/issues"
+		"sources": "https://github.com/waitsys/fast-item-1.21.5-1.21.11",
+		"issues": "https://github.com/waitsys/fast-item-1.21.5-1.21.11/issues"
 	},
 	"license": "CC0-1.0",
 	"environment": "client",

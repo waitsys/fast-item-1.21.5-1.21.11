@@ -1,6 +1,6 @@
 modLoader = "neoforge"
 loaderVersion = "[21,)"
-issueTrackerURL = "https://github.com/Noryea/fast-items/issues"
+issueTrackerURL = "https://github.com/waitsys/fast-item-1.21.5-1.21.11/issues"
 license = "CC0-1.0"
 
 [[mods]]
@@ -8,7 +8,7 @@ modId = "fastitems"
 version = "${version}"
 displayName = "Fast Items"
 logoFile = "fastitems-icon.png"
-authors = "Noryea"
+authors = "Abbezahlen"
 description = '''
 Optimize item rendering by transforming item entities to 2D
 '''
