@@ -5,18 +5,18 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemEntityRenderer;
 import net.minecraft.client.renderer.entity.state.ItemEntityRenderState;
 import net.minecraft.client.renderer.entity.state.ItemClusterRenderState;
-import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.phys.AABB;
+import org.joml.Quaternionf;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,17 +31,12 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
 
     @Shadow @Final private RandomSource random;
 
-    @Override
-    public float getShadowRadius(ItemEntityRenderState state) {
-        return FastItemsConfig.castShadows ? super.getShadowRadius(state) : 0.0f;
-    }
-
     protected ItemEntityRendererMixin(EntityRendererProvider.Context context) {
         super(context);
     }
 
-    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At("HEAD"), cancellable = true)
-    public void submit(ItemEntityRenderState state, PoseStack poseStack, SubmitNodeCollector bufferSource, CameraRenderState cameraRenderState, CallbackInfo ci) {
+    @Inject(method = "render(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("HEAD"), cancellable = true)
+    public void render(ItemEntityRenderState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, CallbackInfo ci) {
         if (!FastItemsConfig.enable) {
             return;
         }
@@ -50,34 +45,27 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
             return;
         }
 
-        AABB aabb = state.item.getModelBoundingBox();
-        boolean gui3d = aabb.getYsize() > 0.0625f;
-
-        if (gui3d && !FastItemsConfig.affect3DModels) {
-            return; // Fallback to vanilla for 3D models
-        }
-
         poseStack.pushPose();
-        
-        float minY = -((float)aabb.minY) + 0.0625f;
-        float bob = Mth.sin((float)(state.ageInTicks / 10.0f + state.bobOffset)) * 0.1f + 0.1f;
-        poseStack.translate(0.0f, bob + minY, 0.0f);
-        poseStack.scale(0.75f, 0.75f, 0.75f); // Scale down slightly to avoid "oversized" look
 
-        // face to player (always look at the camera)
-        poseStack.mulPose(cameraRenderState.orientation);
+        // Simple bobbing animation
+        float bob = Mth.sin((float)(state.ageInTicks / 10.0f + state.bobOffset)) * 0.1f + 0.1f;
+        poseStack.translate(0.0f, bob + 0.0625f, 0.0f);
+        poseStack.scale(0.75f, 0.75f, 0.75f);
+
+        // Face to player (always look at the camera)
+        Quaternionf cameraRotation = Minecraft.getInstance().gameRenderer.getMainCamera().rotation();
+        poseStack.mulPose(cameraRotation);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
 
-        fastitems$renderMultipleFromCount(poseStack, bufferSource, state.lightCoords, state, gui3d, aabb);
+        fastitems$renderMultipleFromCount(poseStack, bufferSource, packedLight, state);
 
         poseStack.popPose();
-        super.submit(state, poseStack, bufferSource, cameraRenderState);
 
         ci.cancel();
     }
 
     @Unique
-    private void fastitems$renderMultipleFromCount(PoseStack poseStack, SubmitNodeCollector multiBufferSource, int light, ItemClusterRenderState state, boolean gui3d, AABB aabb) {
+    private void fastitems$renderMultipleFromCount(PoseStack poseStack, MultiBufferSource multiBufferSource, int light, ItemClusterRenderState state) {
         int count = state.count;
         int renderAmount = 1;
         if (count > 48) {
@@ -92,48 +80,23 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
         if (renderAmount == 0) return;
 
         this.random.setSeed(state.seed);
-        float f11;
-        float f13;
-
-        if (!gui3d) {
-            float f7 = -0.0F * (float)(renderAmount - 1) * 0.5F;
-            f11 = -0.0F * (float)(renderAmount - 1) * 0.5F;
-            f13 = -0.09375F * (float)(renderAmount - 1) * 0.5F;
-            poseStack.translate(f7, f11, f13);
-        }
 
         for (int k = 0; k < renderAmount; ++k) {
             poseStack.pushPose();
             if (k > 0) {
-                if (gui3d) {
-                    f11 = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-                    f13 = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-                    float f10 = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-                    poseStack.translate(this.fastitems$shouldSpreadItems() ? f11 : 0.0F, this.fastitems$shouldSpreadItems() ? f13 : 0.0F, this.fastitems$shouldSpreadItems() ? f10 : 0.0F);
-                } else {
-                    f11 = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
-                    f13 = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
-                    poseStack.translate(this.fastitems$shouldSpreadItems() ? f11 : 0.0, this.fastitems$shouldSpreadItems() ? f13 : 0.0, 0.0);
-                }
+                float xOff = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
+                float yOff = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
+                poseStack.translate(xOff, yOff, 0.0);
             }
 
-            if (!FastItemsConfig.renderSidesOfItems && !gui3d) {
+            if (!FastItemsConfig.renderSidesOfItems) {
                 poseStack.scale(1.0F, 1.0F, 0.01F);
             }
 
-            state.item.submit(poseStack, multiBufferSource, light, OverlayTexture.NO_OVERLAY, state.outlineColor);
+            state.item.render(poseStack, multiBufferSource, light, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
-            
-            if (!gui3d) {
-                // translate by z-scale for thickness stacking - use much smaller offset
-                float offset = FastItemsConfig.renderSidesOfItems ? 0.02f : 0.001f;
-                poseStack.translate(0.0, 0.0, offset);
-            }
-        }
-    }
 
-    @Unique
-    private boolean fastitems$shouldSpreadItems() {
-        return true;
+            poseStack.translate(0.0, 0.0, 0.001);
+        }
     }
 }
