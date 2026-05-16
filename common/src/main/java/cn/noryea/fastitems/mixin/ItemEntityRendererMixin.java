@@ -62,6 +62,7 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
         float minY = -((float)aabb.minY) + 0.0625f;
         float bob = Mth.sin((float)(state.ageInTicks / 10.0f + state.bobOffset)) * 0.1f + 0.1f;
         poseStack.translate(0.0f, bob + minY, 0.0f);
+        poseStack.scale(0.75f, 0.75f, 0.75f); // Scale down slightly to avoid "oversized" look
 
         // face to player (always look at the camera)
         poseStack.mulPose(cameraRenderState.orientation);
@@ -77,7 +78,17 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
 
     @Unique
     private void fastitems$renderMultipleFromCount(PoseStack poseStack, SubmitNodeCollector multiBufferSource, int light, ItemClusterRenderState state, boolean gui3d, AABB aabb) {
-        int renderAmount = state.count;
+        int count = state.count;
+        int renderAmount = 1;
+        if (count > 48) {
+            renderAmount = 5;
+        } else if (count > 32) {
+            renderAmount = 4;
+        } else if (count > 16) {
+            renderAmount = 3;
+        } else if (count > 1) {
+            renderAmount = 2;
+        }
         if (renderAmount == 0) return;
 
         this.random.setSeed(state.seed);
@@ -114,8 +125,8 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
             poseStack.popPose();
             
             if (!gui3d) {
-                // translate by z-scale for thickness stacking
-                float offset = FastItemsConfig.renderSidesOfItems ? 0.0425f : 0.001f;
+                // translate by z-scale for thickness stacking - use much smaller offset
+                float offset = FastItemsConfig.renderSidesOfItems ? 0.02f : 0.001f;
                 poseStack.translate(0.0, 0.0, offset);
             }
         }
