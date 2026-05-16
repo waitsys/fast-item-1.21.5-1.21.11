@@ -1,5 +1,5 @@
 plugins {
-	id "architectury-plugin" version "3.4-SNAPSHOT"
+	id "architectury-plugin" version "3.4.164"
 	id "dev.architectury.loom" version "1.13-SNAPSHOT" apply false
 }
 

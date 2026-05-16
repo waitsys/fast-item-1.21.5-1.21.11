@@ -1,7 +1,7 @@
 package cn.noryea.fastitems;
 
 import cn.noryea.fastitems.config.FastItemsConfig;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 
 @Mod(value = "fastitems")
 public class FastItemsForge {

@@ -19,7 +19,7 @@ config = "fastitems.mixins.json"
 [[dependencies.fastitems]]
     modId = "neoforge"
     mandatory = true
-    versionRange = "[21.11,)"
+    versionRange = "[21,)"
     ordering = "NONE"
     side = "CLIENT"
 
