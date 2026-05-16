@@ -1,0 +1,39 @@
+modLoader = "neoforge"
+loaderVersion = "[21,)"
+issueTrackerURL = "https://github.com/Noryea/fast-items/issues"
+license = "CC0-1.0"
+
+[[mods]]
+modId = "fastitems"
+version = "${version}"
+displayName = "Fast Items"
+logoFile = "fastitems-icon.png"
+authors = "Noryea"
+description = '''
+Optimize item rendering by transforming item entities to 2D
+'''
+
+[[mixins]]
+config = "fastitems.mixins.json"
+
+[[dependencies.fastitems]]
+    modId = "neoforge"
+    mandatory = true
+    versionRange = "[21.11,)"
+    ordering = "NONE"
+    side = "CLIENT"
+
+[[dependencies.fastitems]]
+    modId = "minecraft"
+    mandatory = true
+    versionRange = "[1.21.5, 1.22)"
+    ordering = "NONE"
+    side = "CLIENT"
+
+[[dependencies.fastitems]]
+    modId = "midnightlib"
+    type = "required"
+    mandatory = true
+    versionRange = "[1.9.3,)"
+    ordering = "NONE"
+    side = "CLIENT"
