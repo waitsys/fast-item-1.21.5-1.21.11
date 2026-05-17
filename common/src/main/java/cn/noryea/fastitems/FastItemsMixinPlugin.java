@@ -13,9 +13,25 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String mixinPackage) {
         try {
-            Class.forName("net.minecraft.client.renderer.SubmitNodeCollector", false, getClass().getClassLoader());
-            useModernRenderer = true;
-        } catch (ClassNotFoundException e) {
+            Class<?> rendererClass;
+            try {
+                rendererClass = Class.forName("net.minecraft.client.renderer.entity.ItemEntityRenderer", false, getClass().getClassLoader());
+            } catch (ClassNotFoundException e) {
+                rendererClass = Class.forName("net.minecraft.class_916", false, getClass().getClassLoader());
+            }
+
+            boolean hasSubmit = false;
+            for (java.lang.reflect.Method method : rendererClass.getDeclaredMethods()) {
+                for (Class<?> param : method.getParameterTypes()) {
+                    if (param.getName().equals("net.minecraft.client.renderer.SubmitNodeCollector") || 
+                        param.getName().equals("net.minecraft.class_11659")) {
+                        hasSubmit = true;
+                        break;
+                    }
+                }
+            }
+            useModernRenderer = hasSubmit;
+        } catch (Exception e) {
             useModernRenderer = false;
         }
     }
@@ -24,7 +40,15 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     public String getRefMapperConfig() { return null; }
 
     @Override
-    public boolean shouldApplyMixin(String targetClassName, String mixinClassName) { return true; }
+    public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith("ItemEntityRendererMixin")) {
+            return useModernRenderer;
+        }
+        if (mixinClassName.endsWith("ItemEntityRendererMixinLegacy")) {
+            return !useModernRenderer;
+        }
+        return true;
+    }
 
     @Override
     public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {}
@@ -32,11 +56,8 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     @Override
     public List<String> getMixins() {
         List<String> mixins = new ArrayList<>();
-        if (useModernRenderer) {
-            mixins.add("mixin.ItemEntityRendererMixin");
-        } else {
-            mixins.add("mixin.ItemEntityRendererMixinLegacy");
-        }
+        mixins.add("mixin.ItemEntityRendererMixin");
+        mixins.add("mixin.ItemEntityRendererMixinLegacy");
         return mixins;
     }
 
