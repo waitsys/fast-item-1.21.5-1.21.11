@@ -1,13 +1,8 @@
 package cn.noryea.fastitems;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -26,54 +21,6 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             renderType = 0; // 1.21.5 - 1.21.7 (Legacy render method)
         } else {
             renderType = 2; // 1.21.8+ (Modern submit method)
-            // Perform diagnostic ZIP class scan on the classpath to find net/minecraft/class_916 methods
-            try {
-                boolean scanned = false;
-                String cp = System.getProperty("java.class.path");
-                if (cp != null) {
-                    for (String element : cp.split(File.pathSeparator)) {
-                        Path path = Paths.get(element);
-                        if (Files.exists(path)) {
-                            if (Files.isDirectory(path)) {
-                                Path classFile = path.resolve("net/minecraft/class_916.class");
-                                if (Files.exists(classFile)) {
-                                    try (java.io.InputStream is = Files.newInputStream(classFile)) {
-                                        ClassReader reader = new ClassReader(is);
-                                        ClassNode node = new ClassNode();
-                                        reader.accept(node, 0);
-                                        System.out.println("[FastItems] ASM scan of net/minecraft/class_916 methods from directory:");
-                                        for (MethodNode method : node.methods) {
-                                            System.out.println("[FastItems] ASM Method: " + method.name + " " + method.desc);
-                                        }
-                                        scanned = true;
-                                        break;
-                                    }
-                                }
-                            } else {
-                                try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(path.toFile())) {
-                                    java.util.zip.ZipEntry entry = zip.getEntry("net/minecraft/class_916.class");
-                                    if (entry != null) {
-                                        ClassReader reader = new ClassReader(zip.getInputStream(entry));
-                                        ClassNode node = new ClassNode();
-                                        reader.accept(node, 0);
-                                        System.out.println("[FastItems] ASM scan of net/minecraft/class_916 methods from ZIP/JAR:");
-                                        for (MethodNode method : node.methods) {
-                                            System.out.println("[FastItems] ASM Method: " + method.name + " " + method.desc);
-                                        }
-                                        scanned = true;
-                                        break;
-                                    }
-                                } catch (Exception ignored) {}
-                            }
-                        }
-                    }
-                }
-                if (!scanned) {
-                    System.err.println("[FastItems] Could not find net/minecraft/class_916.class on java.class.path!");
-                }
-            } catch (Exception e) {
-                System.err.println("[FastItems] ZIP scan failed: " + e.toString());
-            }
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
     }
@@ -165,7 +112,14 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
+    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        if (targetClassName.equals("net.minecraft.class_916") || targetClassName.equals("net.minecraft.client.renderer.entity.ItemEntityRenderer")) {
+            System.out.println("[FastItems] preApply hook triggered for class: " + targetClassName);
+            for (MethodNode method : targetClass.methods) {
+                System.out.println("[FastItems] ASM Method found: " + method.name + " " + method.desc);
+            }
+        }
+    }
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
