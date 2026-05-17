@@ -1,9 +1,5 @@
 package cn.noryea.fastitems;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,39 +12,16 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        useModernRenderer = checkModernRenderer();
-    }
-
-    private static boolean checkModernRenderer() {
-        String[] paths = {
-            "net/minecraft/client/renderer/entity/ItemEntityRenderer.class",
-            "net/minecraft/class_916.class"
-        };
-        for (String path : paths) {
-            try (InputStream is = FastItemsMixinPlugin.class.getClassLoader().getResourceAsStream(path)) {
-                if (is != null) {
-                    byte[] bytes = readAllBytes(is);
-                    String content = new String(bytes, StandardCharsets.ISO_8859_1);
-                    // Check if ItemEntityRenderer references SubmitNodeCollector (class_11659),
-                    // which is the parameter introduced in the 1.21.8+ submit rendering pipeline.
-                    if (content.contains("class_11659") || content.contains("SubmitNodeCollector")) {
-                        return true;
-                    }
-                }
-            } catch (Exception ignored) {}
+        try {
+            try {
+                Class.forName("net.minecraft.client.renderer.SubmitNodeCollector", false, getClass().getClassLoader());
+            } catch (ClassNotFoundException e) {
+                Class.forName("net.minecraft.class_11659", false, getClass().getClassLoader());
+            }
+            useModernRenderer = true;
+        } catch (ClassNotFoundException e) {
+            useModernRenderer = false;
         }
-        return false;
-    }
-
-    private static byte[] readAllBytes(InputStream inputStream) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        int nRead;
-        byte[] data = new byte[4096];
-        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, nRead);
-        }
-        buffer.flush();
-        return buffer.toByteArray();
     }
 
     @Override
