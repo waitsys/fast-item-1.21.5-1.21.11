@@ -14,6 +14,7 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     public void onLoad(String mixinPackage) {
         String versionStr = getMinecraftVersion();
         int patch = getMinecraftPatchVersion(versionStr);
+        System.out.println("[FastItems] Detected Minecraft version string: '" + versionStr + "' (parsed patch: " + patch + ")");
 
         if (patch <= 5) {
             renderType = 0; // 1.21.5 (render method)
@@ -22,34 +23,51 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
         } else {
             renderType = 2; // 1.21.8+ (4-param submit)
         }
+        System.out.println("[FastItems] Selected renderType: " + renderType);
     }
 
     private static String getMinecraftVersion() {
-        // Try Fabric Loader API
+        // Try Fabric Loader API (using public interfaces to avoid IllegalAccessException)
         try {
             Class<?> fabricLoaderClass = Class.forName("net.fabricmc.loader.api.FabricLoader");
-            Object loader = fabricLoaderClass.getMethod("getInstance").invoke(null);
-            Object modContainerOpt = fabricLoaderClass.getMethod("getModContainer", String.class).invoke(loader, "minecraft");
-            if (modContainerOpt != null) {
-                Object actualContainer = modContainerOpt.getClass().getMethod("get").invoke(modContainerOpt);
-                Object metadata = actualContainer.getClass().getMethod("getMetadata").invoke(actualContainer);
-                Object version = metadata.getClass().getMethod("getVersion").invoke(metadata);
-                return (String) version.getClass().getMethod("getFriendlyString").invoke(version);
-            }
-        } catch (Exception ignored) {}
+            Class<?> modContainerClass = Class.forName("net.fabricmc.loader.api.ModContainer");
+            Class<?> modMetadataClass = Class.forName("net.fabricmc.loader.api.metadata.ModMetadata");
+            Class<?> versionClass = Class.forName("net.fabricmc.loader.api.Version");
 
-        // Try NeoForge FML ModList API
+            Object loader = fabricLoaderClass.getMethod("getInstance").invoke(null);
+            java.util.Optional<?> modContainerOpt = (java.util.Optional<?>) fabricLoaderClass.getMethod("getModContainer", String.class).invoke(loader, "minecraft");
+            
+            if (modContainerOpt.isPresent()) {
+                Object actualContainer = modContainerOpt.get();
+                Object metadata = modContainerClass.getMethod("getMetadata").invoke(actualContainer);
+                Object version = modMetadataClass.getMethod("getVersion").invoke(metadata);
+                return (String) versionClass.getMethod("getFriendlyString").invoke(version);
+            }
+        } catch (Exception e) {
+            System.err.println("[FastItems] Fabric version detection failed:");
+            e.printStackTrace();
+        }
+
+        // Try NeoForge FML ModList API (using public interfaces/classes to avoid IllegalAccessException)
         try {
             Class<?> modListClass = Class.forName("net.neoforged.fml.ModList");
+            Class<?> modContainerClass = Class.forName("net.neoforged.fml.ModContainer");
+            Class<?> iModInfoClass = Class.forName("net.neoforged.neoforgespi.language.IModInfo");
+            Class<?> mavenVersionClass = Class.forName("org.apache.maven.artifact.versioning.ArtifactVersion");
+
             Object modList = modListClass.getMethod("get").invoke(null);
-            Object modContainerOpt = modListClass.getMethod("getModContainerById", String.class).invoke(modList, "minecraft");
-            if (modContainerOpt != null) {
-                Object actualContainer = modContainerOpt.getClass().getMethod("get").invoke(modContainerOpt);
-                Object modInfo = actualContainer.getClass().getMethod("getModInfo").invoke(actualContainer);
-                Object version = modInfo.getClass().getMethod("getVersion").invoke(modInfo);
+            java.util.Optional<?> modContainerOpt = (java.util.Optional<?>) modListClass.getMethod("getModContainerById", String.class).invoke(modList, "minecraft");
+            
+            if (modContainerOpt.isPresent()) {
+                Object actualContainer = modContainerOpt.get();
+                Object modInfo = modContainerClass.getMethod("getModInfo").invoke(actualContainer);
+                Object version = iModInfoClass.getMethod("getVersion").invoke(modInfo);
                 return version.toString();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            System.err.println("[FastItems] NeoForge version detection failed:");
+            e.printStackTrace();
+        }
 
         return "";
     }
