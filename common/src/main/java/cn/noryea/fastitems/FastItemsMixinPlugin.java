@@ -9,18 +9,27 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public class FastItemsMixinPlugin implements IMixinConfigPlugin {
-    private static int renderType = 0; // 0 = legacy (1.21.5 - 1.21.7), 2 = modern (1.21.8+)
+    private static int renderType = 0; // 0 = legacy (1.21.5 - 1.21.10), 2 = modern (1.21.11+)
 
     @Override
     public void onLoad(String mixinPackage) {
         String versionStr = getMinecraftVersion();
-        int patch = getMinecraftPatchVersion(versionStr);
-        System.out.println("[FastItems] Detected Minecraft version string: '" + versionStr + "' (parsed patch: " + patch + ")");
+        System.out.println("[FastItems] Loading Mod for Minecraft version string: '" + versionStr + "'");
 
-        if (patch <= 7) {
-            renderType = 0; // 1.21.5 - 1.21.7 (Legacy render method)
-        } else {
-            renderType = 2; // 1.21.8+ (Modern submit method)
+        // Dynamically detect rendering pipeline using Class.forName check on SubmitNodeCollector
+        try {
+            Class.forName("net.minecraft.class_11659"); // Yarn name for SubmitNodeCollector (1.21.11+)
+            renderType = 2; // modern (1.21.11+)
+            System.out.println("[FastItems] Detected SubmitNodeCollector (class_11659) -> using Modern rendering pipeline.");
+        } catch (ClassNotFoundException e1) {
+            try {
+                Class.forName("net.minecraft.client.renderer.SubmitNodeCollector"); // Mojang/NeoForge name
+                renderType = 2; // modern (1.21.11+)
+                System.out.println("[FastItems] Detected SubmitNodeCollector -> using Modern rendering pipeline.");
+            } catch (ClassNotFoundException e2) {
+                renderType = 0; // legacy (1.21.5 - 1.21.10)
+                System.out.println("[FastItems] SubmitNodeCollector not found -> using Legacy rendering pipeline.");
+            }
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
     }
@@ -67,26 +76,6 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
         }
 
         return "";
-    }
-
-    private static int getMinecraftPatchVersion(String versionStr) {
-        if (versionStr == null || versionStr.isEmpty()) return 11; // default to modern
-        try {
-            String[] parts = versionStr.split("\\.");
-            if (parts.length >= 3) {
-                String patchPart = parts[2];
-                StringBuilder sb = new StringBuilder();
-                for (char c : patchPart.toCharArray()) {
-                    if (Character.isDigit(c)) {
-                        sb.append(c);
-                    } else {
-                        break;
-                    }
-                }
-                return Integer.parseInt(sb.toString());
-            }
-        } catch (Exception ignored) {}
-        return 11;
     }
 
     @Override
