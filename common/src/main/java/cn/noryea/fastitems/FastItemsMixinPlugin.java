@@ -1,5 +1,6 @@
 package cn.noryea.fastitems;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,20 +17,20 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
         String versionStr = getMinecraftVersion();
         System.out.println("[FastItems] Loading Mod for Minecraft version string: '" + versionStr + "'");
 
-        // Dynamically detect rendering pipeline using Class.forName check on SubmitNodeCollector
+        // Safely check for SubmitNodeCollector.class resource on classpath without triggering any classloading
         try {
-            Class.forName("net.minecraft.class_11659"); // Yarn name for SubmitNodeCollector (1.21.11+)
-            renderType = 2; // modern (1.21.11+)
-            System.out.println("[FastItems] Detected SubmitNodeCollector (class_11659) -> using Modern rendering pipeline.");
-        } catch (ClassNotFoundException e1) {
-            try {
-                Class.forName("net.minecraft.client.renderer.SubmitNodeCollector"); // Mojang/NeoForge name
+            URL url1 = FastItemsMixinPlugin.class.getClassLoader().getResource("net/minecraft/class_11659.class"); // Yarn name
+            URL url2 = FastItemsMixinPlugin.class.getClassLoader().getResource("net/minecraft/client/renderer/SubmitNodeCollector.class"); // Mojang name
+            if (url1 != null || url2 != null) {
                 renderType = 2; // modern (1.21.11+)
-                System.out.println("[FastItems] Detected SubmitNodeCollector -> using Modern rendering pipeline.");
-            } catch (ClassNotFoundException e2) {
+                System.out.println("[FastItems] Safely detected SubmitNodeCollector.class resource -> using Modern rendering pipeline.");
+            } else {
                 renderType = 0; // legacy (1.21.5 - 1.21.10)
-                System.out.println("[FastItems] SubmitNodeCollector not found -> using Legacy rendering pipeline.");
+                System.out.println("[FastItems] SubmitNodeCollector.class resource not found -> using Legacy rendering pipeline.");
             }
+        } catch (Exception e) {
+            System.err.println("[FastItems] Safe resource check failed: " + e.toString());
+            renderType = 0; // fallback to legacy
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
     }
