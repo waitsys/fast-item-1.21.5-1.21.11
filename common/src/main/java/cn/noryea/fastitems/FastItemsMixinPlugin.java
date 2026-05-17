@@ -3,7 +3,9 @@ package cn.noryea.fastitems;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -20,12 +22,23 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             renderType = 0; // 1.21.5 - 1.21.7 (Legacy render method)
         } else {
             renderType = 2; // 1.21.8+ (Modern submit method)
+            // Perform diagnostic ASM scan of net.minecraft.class_916 to find the exact modern method signature
+            try {
+                ClassReader reader = new ClassReader("net.minecraft.class_916");
+                ClassNode node = new ClassNode();
+                reader.accept(node, 0);
+                System.out.println("[FastItems] ASM scan of net.minecraft.class_916 methods for modern version:");
+                for (MethodNode method : node.methods) {
+                    System.out.println("[FastItems] ASM Method: " + method.name + " " + method.desc);
+                }
+            } catch (Exception e) {
+                System.err.println("[FastItems] ASM scan failed for modern version: " + e.toString());
+            }
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
     }
 
     private static String getMinecraftVersion() {
-        // Try Fabric Loader API
         try {
             Class<?> fabricLoaderClass = Class.forName("net.fabricmc.loader.api.FabricLoader");
             Class<?> modContainerClass = Class.forName("net.fabricmc.loader.api.ModContainer");
@@ -46,7 +59,6 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             e.printStackTrace();
         }
 
-        // Try NeoForge FML ModList API
         try {
             Class<?> modListClass = Class.forName("net.neoforged.fml.ModList");
             Class<?> modContainerClass = Class.forName("net.neoforged.fml.ModContainer");
