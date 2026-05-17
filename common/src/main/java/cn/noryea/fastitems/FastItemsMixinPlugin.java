@@ -12,35 +12,66 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        boolean hasSubmitCollector = false;
-        try {
-            try {
-                Class.forName("net.minecraft.client.renderer.SubmitNodeCollector", false, getClass().getClassLoader());
-            } catch (ClassNotFoundException e) {
-                Class.forName("net.minecraft.class_11659", false, getClass().getClassLoader());
-            }
-            hasSubmitCollector = true;
-        } catch (ClassNotFoundException ignored) {}
+        String versionStr = getMinecraftVersion();
+        int patch = getMinecraftPatchVersion(versionStr);
 
-        if (!hasSubmitCollector) {
+        if (patch <= 5) {
             renderType = 0; // 1.21.5 (render method)
+        } else if (patch == 6 || patch == 7) {
+            renderType = 1; // 1.21.6 - 1.21.7 (3-param submit)
         } else {
-            boolean hasCreaking = false;
-            try {
-                try {
-                    Class.forName("net.minecraft.world.entity.monster.creaking.Creaking", false, getClass().getClassLoader());
-                } catch (ClassNotFoundException e) {
-                    Class.forName("net.minecraft.class_10279", false, getClass().getClassLoader());
-                }
-                hasCreaking = true;
-            } catch (ClassNotFoundException ignored) {}
-
-            if (hasCreaking) {
-                renderType = 2; // 1.21.8+ (modern 4-param submit)
-            } else {
-                renderType = 1; // 1.21.6 - 1.21.7 (mid 3-param submit)
-            }
+            renderType = 2; // 1.21.8+ (4-param submit)
         }
+    }
+
+    private static String getMinecraftVersion() {
+        // Try Fabric Loader API
+        try {
+            Class<?> fabricLoaderClass = Class.forName("net.fabricmc.loader.api.FabricLoader");
+            Object loader = fabricLoaderClass.getMethod("getInstance").invoke(null);
+            Object modContainerOpt = fabricLoaderClass.getMethod("getModContainer", String.class).invoke(loader, "minecraft");
+            if (modContainerOpt != null) {
+                Object actualContainer = modContainerOpt.getClass().getMethod("get").invoke(modContainerOpt);
+                Object metadata = actualContainer.getClass().getMethod("getMetadata").invoke(actualContainer);
+                Object version = metadata.getClass().getMethod("getVersion").invoke(metadata);
+                return (String) version.getClass().getMethod("getFriendlyString").invoke(version);
+            }
+        } catch (Exception ignored) {}
+
+        // Try NeoForge FML ModList API
+        try {
+            Class<?> modListClass = Class.forName("net.neoforged.fml.ModList");
+            Object modList = modListClass.getMethod("get").invoke(null);
+            Object modContainerOpt = modListClass.getMethod("getModContainerById", String.class).invoke(modList, "minecraft");
+            if (modContainerOpt != null) {
+                Object actualContainer = modContainerOpt.getClass().getMethod("get").invoke(modContainerOpt);
+                Object modInfo = actualContainer.getClass().getMethod("getModInfo").invoke(actualContainer);
+                Object version = modInfo.getClass().getMethod("getVersion").invoke(modInfo);
+                return version.toString();
+            }
+        } catch (Exception ignored) {}
+
+        return "";
+    }
+
+    private static int getMinecraftPatchVersion(String versionStr) {
+        if (versionStr == null || versionStr.isEmpty()) return 11; // default to modern
+        try {
+            String[] parts = versionStr.split("\\.");
+            if (parts.length >= 3) {
+                String patchPart = parts[2];
+                StringBuilder sb = new StringBuilder();
+                for (char c : patchPart.toCharArray()) {
+                    if (Character.isDigit(c)) {
+                        sb.append(c);
+                    } else {
+                        break;
+                    }
+                }
+                return Integer.parseInt(sb.toString());
+            }
+        } catch (Exception ignored) {}
+        return 11;
     }
 
     @Override
