@@ -6,7 +6,7 @@ import com.mojang.math.Axis;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemEntityRenderer;
@@ -36,8 +36,8 @@ public abstract class ItemEntityRendererMixinMid extends EntityRenderer<ItemEnti
         super(context);
     }
 
-    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;)V", at = @At("HEAD"), cancellable = true)
-    public void submit(ItemEntityRenderState state, PoseStack poseStack, SubmitNodeCollector bufferSource, CallbackInfo ci) {
+    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V", at = @At("HEAD"), cancellable = true)
+    public void submit(ItemEntityRenderState state, PoseStack poseStack, MultiBufferSource bufferSource, CallbackInfo ci) {
         if (!FastItemsConfig.enable) return;
         if (state.item.isEmpty()) return;
 
@@ -76,7 +76,7 @@ public abstract class ItemEntityRendererMixinMid extends EntityRenderer<ItemEnti
     }
 
     @Unique
-    private void fastitems$renderMultipleFromCount(PoseStack poseStack, SubmitNodeCollector multiBufferSource, int light, ItemClusterRenderState state, boolean gui3d, AABB aabb) {
+    private void fastitems$renderMultipleFromCount(PoseStack poseStack, MultiBufferSource multiBufferSource, int light, ItemClusterRenderState state, boolean gui3d, AABB aabb) {
         int count = state.count;
         int renderAmount = 1;
         if (count > 48) renderAmount = 5;
@@ -115,7 +115,32 @@ public abstract class ItemEntityRendererMixinMid extends EntityRenderer<ItemEnti
                 poseStack.scale(1.0F, 1.0F, 0.01F);
             }
 
-            state.item.submit(poseStack, multiBufferSource, light, OverlayTexture.NO_OVERLAY, state.outlineColor);
+            try {
+                boolean invoked = false;
+                for (java.lang.reflect.Method method : state.item.getClass().getMethods()) {
+                    if ((method.getName().equals("submit") || method.getName().equals("render")) 
+                            && method.getParameterCount() == 5) {
+                        method.setAccessible(true);
+                        method.invoke(state.item, poseStack, multiBufferSource, light, OverlayTexture.NO_OVERLAY, state.outlineColor);
+                        invoked = true;
+                        break;
+                    }
+                }
+                if (!invoked) {
+                    for (java.lang.reflect.Method method : state.item.getClass().getMethods()) {
+                        if ((method.getName().equals("submit") || method.getName().equals("render")) 
+                                && method.getParameterCount() == 4) {
+                            method.setAccessible(true);
+                            method.invoke(state.item, poseStack, multiBufferSource, light, OverlayTexture.NO_OVERLAY);
+                            invoked = true;
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[FastItems] Failed to render item reflectively: " + e.toString());
+            }
+
             poseStack.popPose();
             
             if (!gui3d) {

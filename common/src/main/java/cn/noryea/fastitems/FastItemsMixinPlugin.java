@@ -24,10 +24,25 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             renderType = 2; // 1.21.8+ (4-param submit)
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
+
+        // Reflect net.minecraft.class_916 to see its exact method signatures
+        try {
+            Class<?> rendererClass = Class.forName("net.minecraft.class_916");
+            System.out.println("[FastItems] Methods in net.minecraft.class_916:");
+            for (java.lang.reflect.Method method : rendererClass.getDeclaredMethods()) {
+                StringBuilder params = new StringBuilder();
+                for (Class<?> p : method.getParameterTypes()) {
+                    params.append(p.getName()).append(", ");
+                }
+                System.out.println(" - " + method.getName() + "(" + params + ") -> " + method.getReturnType().getName());
+            }
+        } catch (Exception e) {
+            System.out.println("[FastItems] Failed to reflect net.minecraft.class_916: " + e.toString());
+        }
     }
 
     private static String getMinecraftVersion() {
-        // Try Fabric Loader API (using public interfaces to avoid IllegalAccessException)
+        // Try Fabric Loader API
         try {
             Class<?> fabricLoaderClass = Class.forName("net.fabricmc.loader.api.FabricLoader");
             Class<?> modContainerClass = Class.forName("net.fabricmc.loader.api.ModContainer");
@@ -48,7 +63,7 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             e.printStackTrace();
         }
 
-        // Try NeoForge FML ModList API (using public interfaces/classes to avoid IllegalAccessException)
+        // Try NeoForge FML ModList API
         try {
             Class<?> modListClass = Class.forName("net.neoforged.fml.ModList");
             Class<?> modContainerClass = Class.forName("net.neoforged.fml.ModContainer");
