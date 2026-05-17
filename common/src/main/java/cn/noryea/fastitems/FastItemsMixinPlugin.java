@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public class FastItemsMixinPlugin implements IMixinConfigPlugin {
-    private static int renderType = 0; // 0 = legacy, 1 = mid, 2 = modern
+    private static int renderType = 0; // 0 = legacy (1.21.5 - 1.21.7), 2 = modern (1.21.8+)
 
     @Override
     public void onLoad(String mixinPackage) {
@@ -16,12 +16,10 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
         int patch = getMinecraftPatchVersion(versionStr);
         System.out.println("[FastItems] Detected Minecraft version string: '" + versionStr + "' (parsed patch: " + patch + ")");
 
-        if (patch <= 5) {
-            renderType = 0; // 1.21.5 (render method)
-        } else if (patch == 6 || patch == 7) {
-            renderType = 1; // 1.21.6 - 1.21.7 (3-param submit)
+        if (patch <= 7) {
+            renderType = 0; // 1.21.5 - 1.21.7 (Legacy render method)
         } else {
-            renderType = 2; // 1.21.8+ (4-param submit)
+            renderType = 2; // 1.21.8+ (Modern submit method)
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
     }
@@ -108,8 +106,6 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
         List<String> mixins = new ArrayList<>();
         if (renderType == 2) {
             mixins.add("ItemEntityRendererMixin");
-        } else if (renderType == 1) {
-            mixins.add("ItemEntityRendererMixinMid");
         } else {
             mixins.add("ItemEntityRendererMixinLegacy");
         }

@@ -35,7 +35,15 @@ public abstract class ItemEntityRendererMixinLegacy extends EntityRenderer<ItemE
         super(context);
     }
 
-    @Inject(method = "render(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("HEAD"), cancellable = true)
+    @Inject(
+        method = {
+            "render(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
+            "method_3996(Lnet/minecraft/class_10039;Lnet/minecraft/class_4587;Lnet/minecraft/class_4597;I)V"
+        },
+        at = @At("HEAD"),
+        cancellable = true,
+        remap = false
+    )
     public void render(ItemEntityRenderState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, CallbackInfo ci) {
         if (!FastItemsConfig.enable) return;
         if (state.item.isEmpty()) return;
