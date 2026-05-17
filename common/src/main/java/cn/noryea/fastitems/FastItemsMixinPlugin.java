@@ -24,21 +24,6 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             renderType = 2; // 1.21.8+ (4-param submit)
         }
         System.out.println("[FastItems] Selected renderType: " + renderType);
-
-        // Reflect net.minecraft.class_916 to see its exact method signatures
-        try {
-            Class<?> rendererClass = Class.forName("net.minecraft.class_916");
-            System.out.println("[FastItems] Methods in net.minecraft.class_916:");
-            for (java.lang.reflect.Method method : rendererClass.getDeclaredMethods()) {
-                StringBuilder params = new StringBuilder();
-                for (Class<?> p : method.getParameterTypes()) {
-                    params.append(p.getName()).append(", ");
-                }
-                System.out.println(" - " + method.getName() + "(" + params + ") -> " + method.getReturnType().getName());
-            }
-        } catch (Exception e) {
-            System.out.println("[FastItems] Failed to reflect net.minecraft.class_916: " + e.toString());
-        }
     }
 
     private static String getMinecraftVersion() {
