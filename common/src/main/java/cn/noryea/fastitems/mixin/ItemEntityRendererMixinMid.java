@@ -36,8 +36,8 @@ public abstract class ItemEntityRendererMixinMid extends EntityRenderer<ItemEnti
         super(context);
     }
 
-    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V", at = @At("HEAD"), cancellable = true)
-    public void submit(ItemEntityRenderState state, PoseStack poseStack, MultiBufferSource bufferSource, CallbackInfo ci) {
+    @Inject(method = "render(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V", at = @At("HEAD"), cancellable = true)
+    public void render(ItemEntityRenderState state, PoseStack poseStack, MultiBufferSource bufferSource, CallbackInfo ci) {
         if (!FastItemsConfig.enable) return;
         if (state.item.isEmpty()) return;
 
@@ -64,7 +64,7 @@ public abstract class ItemEntityRendererMixinMid extends EntityRenderer<ItemEnti
         poseStack.popPose();
         try {
             for (java.lang.reflect.Method method : EntityRenderer.class.getDeclaredMethods()) {
-                if ((method.getName().equals("submit") || method.getName().equals("method_3996")) 
+                if ((method.getName().equals("render") || method.getName().equals("method_3996")) 
                         && method.getParameterCount() == 3) {
                     method.setAccessible(true);
                     method.invoke(this, state, poseStack, bufferSource);
