@@ -8,19 +8,38 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public class FastItemsMixinPlugin implements IMixinConfigPlugin {
-    private static boolean useModernRenderer = false;
+    private static int renderType = 0; // 0 = legacy, 1 = mid, 2 = modern
 
     @Override
     public void onLoad(String mixinPackage) {
+        boolean hasSubmitCollector = false;
         try {
             try {
                 Class.forName("net.minecraft.client.renderer.SubmitNodeCollector", false, getClass().getClassLoader());
             } catch (ClassNotFoundException e) {
                 Class.forName("net.minecraft.class_11659", false, getClass().getClassLoader());
             }
-            useModernRenderer = true;
-        } catch (ClassNotFoundException e) {
-            useModernRenderer = false;
+            hasSubmitCollector = true;
+        } catch (ClassNotFoundException ignored) {}
+
+        if (!hasSubmitCollector) {
+            renderType = 0; // 1.21.5 (render method)
+        } else {
+            boolean hasCreaking = false;
+            try {
+                try {
+                    Class.forName("net.minecraft.world.entity.monster.creaking.Creaking", false, getClass().getClassLoader());
+                } catch (ClassNotFoundException e) {
+                    Class.forName("net.minecraft.class_10279", false, getClass().getClassLoader());
+                }
+                hasCreaking = true;
+            } catch (ClassNotFoundException ignored) {}
+
+            if (hasCreaking) {
+                renderType = 2; // 1.21.8+ (modern 4-param submit)
+            } else {
+                renderType = 1; // 1.21.6 - 1.21.7 (mid 3-param submit)
+            }
         }
     }
 
@@ -38,8 +57,10 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     @Override
     public List<String> getMixins() {
         List<String> mixins = new ArrayList<>();
-        if (useModernRenderer) {
+        if (renderType == 2) {
             mixins.add("ItemEntityRendererMixin");
+        } else if (renderType == 1) {
+            mixins.add("ItemEntityRendererMixinMid");
         } else {
             mixins.add("ItemEntityRendererMixinLegacy");
         }
