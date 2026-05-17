@@ -1,0 +1,8 @@
+{
+  "fastitems.midnightconfig.title": "Fast Items Einstellungen",
+  "fastitems.midnightconfig.enable": "Fast Items Mod aktivieren",
+  "fastitems.midnightconfig.itemScale": "Drop-Item-Größe (Skalierung)",
+  "fastitems.midnightconfig.castShadows": "Schatten für Drop-Items rendern",
+  "fastitems.midnightconfig.renderSidesOfItems": "Seitenkanten für 2D Drop-Items rendern",
+  "fastitems.midnightconfig.affect3DModels": "Auch auf 3D-Modelle (Blöcke) anwenden"
+}

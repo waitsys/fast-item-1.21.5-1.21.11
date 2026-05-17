@@ -51,7 +51,7 @@ public abstract class ItemEntityRendererMixinLegacy extends EntityRenderer<ItemE
 
         float bob = (float) Math.sin((double)(state.ageInTicks / 10.0f + state.bobOffset)) * 0.1f + 0.1f;
         poseStack.translate(0.0f, bob + 0.0625f, 0.0f);
-        poseStack.scale(0.75f, 0.75f, 0.75f);
+        poseStack.scale(FastItemsConfig.itemScale, FastItemsConfig.itemScale, FastItemsConfig.itemScale);
 
         Quaternionf cameraRotation = Minecraft.getInstance().gameRenderer.getMainCamera().rotation();
         poseStack.mulPose(cameraRotation);

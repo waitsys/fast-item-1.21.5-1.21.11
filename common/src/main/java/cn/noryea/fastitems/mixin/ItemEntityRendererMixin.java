@@ -70,7 +70,7 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity,
         float minY = -((float)aabb.minY) + 0.0625f;
         float bob = (float) Math.sin((double)(state.ageInTicks / 10.0f + state.bobOffset)) * 0.1f + 0.1f;
         poseStack.translate(0.0f, bob + minY, 0.0f);
-        poseStack.scale(0.75f, 0.75f, 0.75f); // Scale down slightly to avoid "oversized" look
+        poseStack.scale(FastItemsConfig.itemScale, FastItemsConfig.itemScale, FastItemsConfig.itemScale); // Custom configurable item size
 
         // face to player (always look at the camera)
         poseStack.mulPose(cameraRenderState.orientation);
