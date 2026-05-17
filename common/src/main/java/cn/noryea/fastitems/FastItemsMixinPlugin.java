@@ -29,9 +29,9 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
                 if (is != null) {
                     byte[] bytes = readAllBytes(is);
                     String content = new String(bytes, StandardCharsets.ISO_8859_1);
-                    // Check if ItemEntityRenderer references CameraRenderState (class_12075),
-                    // which was only introduced in 1.21.8's submit rendering pipeline.
-                    if (content.contains("class_12075") || content.contains("CameraRenderState")) {
+                    // Check if ItemEntityRenderer references SubmitNodeCollector (class_11659),
+                    // which is the parameter introduced in the 1.21.8+ submit rendering pipeline.
+                    if (content.contains("class_11659") || content.contains("SubmitNodeCollector")) {
                         return true;
                     }
                 }
