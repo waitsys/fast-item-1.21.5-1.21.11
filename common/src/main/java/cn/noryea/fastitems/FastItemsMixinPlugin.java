@@ -22,14 +22,19 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
             renderType = 0; // 1.21.5 - 1.21.7 (Legacy render method)
         } else {
             renderType = 2; // 1.21.8+ (Modern submit method)
-            // Perform diagnostic ASM scan of net.minecraft.class_916 to find the exact modern method signature
+            // Perform diagnostic ASM scan using classloader resource stream
             try {
-                ClassReader reader = new ClassReader("net.minecraft.class_916");
-                ClassNode node = new ClassNode();
-                reader.accept(node, 0);
-                System.out.println("[FastItems] ASM scan of net.minecraft.class_916 methods for modern version:");
-                for (MethodNode method : node.methods) {
-                    System.out.println("[FastItems] ASM Method: " + method.name + " " + method.desc);
+                java.io.InputStream stream = FastItemsMixinPlugin.class.getClassLoader().getResourceAsStream("net/minecraft/class_916.class");
+                if (stream != null) {
+                    ClassReader reader = new ClassReader(stream);
+                    ClassNode node = new ClassNode();
+                    reader.accept(node, 0);
+                    System.out.println("[FastItems] ASM scan of net/minecraft/class_916 methods for modern version:");
+                    for (MethodNode method : node.methods) {
+                        System.out.println("[FastItems] ASM Method: " + method.name + " " + method.desc);
+                    }
+                } else {
+                    System.err.println("[FastItems] Could not find stream for net/minecraft/class_916.class");
                 }
             } catch (Exception e) {
                 System.err.println("[FastItems] ASM scan failed for modern version: " + e.toString());
