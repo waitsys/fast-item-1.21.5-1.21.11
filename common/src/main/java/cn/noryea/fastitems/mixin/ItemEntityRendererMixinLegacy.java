@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.entity.ItemEntityRenderer;
 import net.minecraft.client.renderer.entity.state.ItemEntityRenderState;
 import net.minecraft.client.renderer.entity.state.ItemClusterRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import org.joml.Quaternionf;
@@ -46,7 +45,7 @@ public abstract class ItemEntityRendererMixinLegacy extends EntityRenderer<ItemE
     )
     public void render(ItemEntityRenderState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, CallbackInfo ci) {
         if (!FastItemsConfig.enable) return;
-        if (state.item.isEmpty()) return;
+        if (state.item == null || state.item.isEmpty()) return;
 
         poseStack.pushPose();
 
@@ -86,10 +85,48 @@ public abstract class ItemEntityRendererMixinLegacy extends EntityRenderer<ItemE
                 poseStack.scale(1.0F, 1.0F, 0.01F);
             }
             try {
-                java.lang.reflect.Method renderMethod = state.item.getClass().getMethod("render",
-                    PoseStack.class, MultiBufferSource.class, int.class, int.class);
-                renderMethod.invoke(state.item, poseStack, bufferSource, light, OverlayTexture.NO_OVERLAY);
-            } catch (Exception ignored) {}
+                boolean invoked = false;
+                for (java.lang.reflect.Method method : state.item.getClass().getMethods()) {
+                    Class<?>[] params = method.getParameterTypes();
+                    if (params.length == 4 || params.length == 5) {
+                        if (params[0].getName().contains("PoseStack") || params[0].getName().contains("class_4587")) {
+                            if (params[2] == int.class && params[3] == int.class) {
+                                if (params.length == 5 && params[4] != int.class) {
+                                    continue;
+                                }
+                                method.setAccessible(true);
+                                if (params.length == 4) {
+                                    method.invoke(state.item, poseStack, bufferSource, light, OverlayTexture.NO_OVERLAY);
+                                } else {
+                                    int outlineColor = 0;
+                                    try {
+                                        java.lang.reflect.Field field = state.getClass().getField("outlineColor");
+                                        outlineColor = (int) field.get(state);
+                                    } catch (Exception ignored) {
+                                        try {
+                                            java.lang.reflect.Field field = state.getClass().getDeclaredField("outlineColor");
+                                            field.setAccessible(true);
+                                            outlineColor = (int) field.get(state);
+                                        } catch (Exception ignored2) {}
+                                    }
+                                    method.invoke(state.item, poseStack, bufferSource, light, OverlayTexture.NO_OVERLAY, outlineColor);
+                                }
+                                invoked = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!invoked) {
+                    System.err.println("[FastItems] Failed to find rendering method on " + state.item.getClass().getName());
+                    for (java.lang.reflect.Method method : state.item.getClass().getMethods()) {
+                        System.err.println("[FastItems]   Method: " + method.getName() + " params: " + method.getParameterCount());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[FastItems] Render exception: " + e.toString());
+                e.printStackTrace();
+            }
             poseStack.popPose();
             poseStack.translate(0.0, 0.0, 0.001);
         }
