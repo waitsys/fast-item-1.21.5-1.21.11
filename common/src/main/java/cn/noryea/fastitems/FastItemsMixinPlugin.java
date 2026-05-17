@@ -56,12 +56,6 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (mixinClassName.endsWith("ItemEntityRendererMixin")) {
-            return useModernRenderer;
-        }
-        if (mixinClassName.endsWith("ItemEntityRendererMixinLegacy")) {
-            return !useModernRenderer;
-        }
         return true;
     }
 
@@ -71,8 +65,11 @@ public class FastItemsMixinPlugin implements IMixinConfigPlugin {
     @Override
     public List<String> getMixins() {
         List<String> mixins = new ArrayList<>();
-        mixins.add("mixin.ItemEntityRendererMixin");
-        mixins.add("mixin.ItemEntityRendererMixinLegacy");
+        if (useModernRenderer) {
+            mixins.add("ItemEntityRendererMixin");
+        } else {
+            mixins.add("ItemEntityRendererMixinLegacy");
+        }
         return mixins;
     }
 

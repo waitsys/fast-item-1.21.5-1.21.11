@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "cn.noryea.fastitems",
+	"package": "cn.noryea.fastitems.mixin",
 	"plugin": "cn.noryea.fastitems.FastItemsMixinPlugin",
 	"compatibilityLevel": "JAVA_21",
 	"minVersion": "0.8",
@@ -8,6 +8,6 @@
 		"defaultRequire": 1
 	},
 	"client": [
-		"mixin.ItemClusterRenderStateMixin"
+		"ItemClusterRenderStateMixin"
 	]
 }
