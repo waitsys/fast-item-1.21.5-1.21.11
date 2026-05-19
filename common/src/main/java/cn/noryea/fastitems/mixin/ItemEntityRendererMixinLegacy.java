@@ -15,6 +15,8 @@ import net.minecraft.client.renderer.entity.state.ItemClusterRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.joml.Quaternionf;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,6 +38,26 @@ public abstract class ItemEntityRendererMixinLegacy extends EntityRenderer<ItemE
 
     @Inject(
         method = {
+            "updateRenderState(Lnet/minecraft/world/entity/item/ItemEntity;Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;F)V",
+            "method_62470(Lnet/minecraft/class_1542;Lnet/minecraft/class_10039;F)V"
+        },
+        at = @At("TAIL"),
+        require = 0,
+        remap = false
+    )
+    public void updateRenderState(ItemEntity entity, ItemEntityRenderState state, float tickDelta, CallbackInfo ci) {
+        ItemStack stack = entity.getItem();
+        if (stack != null && !stack.isEmpty()) {
+            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            float scale = FastItemsConfig.getCustomScale(itemId);
+            ((ItemEntityRenderStateAccessor) state).fastitems$setCustomScale(scale);
+        } else {
+            ((ItemEntityRenderStateAccessor) state).fastitems$setCustomScale(1.0f);
+        }
+    }
+
+    @Inject(
+        method = {
             "render(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             "method_3996(Lnet/minecraft/class_10039;Lnet/minecraft/class_4587;Lnet/minecraft/class_4597;I)V"
         },
@@ -51,7 +73,10 @@ public abstract class ItemEntityRendererMixinLegacy extends EntityRenderer<ItemE
 
         float bob = (float) Math.sin((double)(state.ageInTicks / 10.0f + state.bobOffset)) * 0.1f + 0.1f;
         poseStack.translate(0.0f, bob + 0.0625f, 0.0f);
-        poseStack.scale(FastItemsConfig.itemScale, FastItemsConfig.itemScale, FastItemsConfig.itemScale);
+        
+        float customScale = ((ItemEntityRenderStateAccessor) state).fastitems$getCustomScale();
+        float finalScale = FastItemsConfig.itemScale * customScale;
+        poseStack.scale(finalScale, finalScale, finalScale);
 
         Quaternionf cameraRotation = Minecraft.getInstance().gameRenderer.getMainCamera().rotation();
         poseStack.mulPose(cameraRotation);
